@@ -1,0 +1,78 @@
+html {
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: inherit;
+}
+
+body {
+  color: #fff;
+  cursor: crosshair;
+  font-family: monospace;
+  margin: 0;
+  text-shadow: 1px 0 0px #111, 0px 1px 0px #111, -1px 0 0px #111, 0 -1px 0px #111;
+}
+
+.theremin {
+	height: 100vh;
+	overflow: hidden;
+	width: 100vw;
+}
+
+h1 {
+  text-align: center;
+}
+
+.controls {
+  align-items: stretch;
+  border-top: 1px solid #111;
+  bottom: 0;
+  color: #fff;
+  padding: 1em;
+  display: flex;
+  font-size: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  position: fixed;
+  width: 100%;
+  > * {
+    align-items: center;
+    display: flex;
+    flex: 0 1 auto;
+    justify-content: center;
+  }
+  select {
+    align-self: center;
+  }
+}
+
+.currentNote {
+  width: 33%;
+}
+
+.notes {
+  justify-content: center;
+  width: 100%;
+  > * {
+    margin-right: 1em;
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+}
+
+.overlay {
+  align-items: center;
+  background: #111;
+  display: flex;
+  font-size: 3em;
+  height: 100vh;
+  padding: 1em;
+  position: absolute;
+  top: 0;
+  width: 100vw;
+  z-index: 1;
+}
