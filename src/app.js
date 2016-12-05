@@ -1,6 +1,7 @@
 import fetch from 'isomorphic-fetch'
 import * as styles from './app.css'
 import reverb from 'arraybuffer!./AbernyteGrainSilo.m4a'
+import view from './view.html'
 
 /**
  * Audio.
@@ -37,7 +38,19 @@ const state = {
     'triangle'
   ],
   overlayVisible: true,
-  view: document.createElement('div'),
+  // view: document.createElement('div'),
+  viewEls: {
+    allowedNotes: view.querySelector('#allowed-notes'),
+    bufferSrc: view.querySelector('#custom-buffer-source'),
+    clampToNote: view.querySelector('#clamp-to-note'),
+    controls: view.querySelector('#controls'),
+    vibratoAmplitube: view.querySelector('#vibrato-amplitude'),
+    vibratoRate: view.querySelector('#vibrato-rate'),
+    noteDisplay: view.querySelector('#note-display'),
+    overlay: view.querySelector('#overlay'),
+    toggleVibrato: view.querySelector('#enable-vibrato'),
+    waves: view.querySelector('#waves')
+  },
   vibrato: { dir: 1, val: 1, rate: 10, amplitude: 5, interval: () => {} }
 }
 
@@ -75,96 +88,70 @@ function getNotes () {
 /**
  * View.
  */
-const noteDisplay = document.createElement('p')
-const allowedNotes = document.createElement('form')
-const controls = document.createElement('div')
-const clampOption = document.createElement('div')
-const toggleSnapToNote = document.createElement('input')
-const waves = document.createElement('select')
-const bufferSrc = document.createElement('form')
-const bufferInput = document.createElement('input')
-const bufferSubmit = document.createElement('button')
-const vibratoSettings = document.createElement('form')
-const shouldUseVibrato = document.createElement('input')
-const vibratoRateInput = document.createElement('input')
-const vibratoAmplitubeInput = document.createElement('input')
-
-// Overlay
-const overlay = document.createElement('div')
-overlay.innerHTML = `Heads up! This thing makes noise. It shouldn't be too loud, but consider turning down your speakers or headphones just in case. Click anywhere to begin.`
-overlay.classList.add(styles.overlay)
-state.view.appendChild(overlay)
-
-// Controls
-state.currentScale.map((note, idx) => {
-  const el = document.createElement('div')
-  const label = document.createElement('label')
-  const input = document.createElement('input')
-  label.innerHTML = note.name
-  input.type = 'checkbox'
-  input.setAttribute('checked', true)
-  el.appendChild(label)
-  el.appendChild(input)
-  input.addEventListener('click', (e) => {
-    state.currentScale[idx].disabled = !input.checked
+function initView () {
+  // View parent
+  view.classList.add(styles.view)
+  // Overlay
+  state.viewEls.overlay.classList.add(styles.overlay)
+  state.viewEls.overlay.addEventListener('click', (e) => {
+    e.target.remove()
+    initAudio()
   })
-  return el
-})
-.forEach((node) => {
-  allowedNotes.appendChild(node)
-})
-toggleSnapToNote.type = 'checkbox'
-clampOption.innerHTML = 'Clamp to note?'
-bufferInput.placeholder = 'Custom buffer source'
-bufferSubmit.innerHTML = 'Get'
-bufferSrc.appendChild(bufferInput)
-bufferSrc.appendChild(bufferSubmit)
-vibratoRateInput.type = 'number'
-vibratoRateInput.value = state.vibrato.rate
-vibratoAmplitubeInput.type = 'number'
-vibratoAmplitubeInput.value = state.vibrato.amplitude
-shouldUseVibrato.type = 'checkbox'
-vibratoSettings.appendChild(shouldUseVibrato)
-vibratoSettings.appendChild(vibratoRateInput)
-vibratoSettings.appendChild(vibratoAmplitubeInput)
-clampOption.appendChild(toggleSnapToNote)
-controls.appendChild(clampOption)
-controls.appendChild(waves)
-controls.appendChild(bufferSrc)
-controls.appendChild(vibratoSettings)
-noteDisplay.classList.add(styles.currentNote)
-controls.appendChild(noteDisplay)
-allowedNotes.classList.add(styles.notes)
-controls.appendChild(allowedNotes)
-controls.classList.add(styles.controls)
-state.view.appendChild(controls)
-waves.innerHTML = state.waves.map((wave) => {
-  return `<option value="${wave}">${wave}</option>`
-}).join('')
+  // Controls
+  state.viewEls.controls.classList.add(styles.controls)
+  // Add allowed notes
+  state.viewEls.allowedNotes.classList.add(styles.notes)
+  state.currentScale
+    .map((note, idx) => {
+      const el = document.createElement('div')
+      const label = document.createElement('label')
+      const input = document.createElement('input')
+      label.innerHTML = note.name
+      input.type = 'checkbox'
+      input.setAttribute('checked', true)
+      el.appendChild(label)
+      el.appendChild(input)
+      input.addEventListener('click', (e) => {
+        state.currentScale[idx].disabled = !input.checked
+      })
+      return el
+    })
+    .reduce((init, cur) => {
+      state.viewEls.allowedNotes.appendChild(cur)
+      return init
+    }, [])
+  // Add waves
+  state.viewEls.waves.innerHTML = state.waves.map((wave) => {
+    return `<option value="${wave}">${wave}</option>`
+  }).join('')
+  state.viewEls.waves.addEventListener('click', (e) => {
+    state.gain.gain.value = 0
+  })
+  state.viewEls.waves.addEventListener('change', (e) => {
+    state.oscillator.type = e.target.value
+  })
 
-/**
- * Events.
- */
-overlay.addEventListener('click', (e) => {
-  e.target.remove()
-  initAudio()
-})
-waves.addEventListener('click', (e) => {
-  state.gain.gain.value = 0
-})
-waves.addEventListener('change', (e) => {
-  state.oscillator.type = e.target.value
-})
-toggleSnapToNote.addEventListener('click', (e) => {
-  state.clampToNote = !state.clampToNote
-})
-allowedNotes.addEventListener('submit', (e) => {
-  e.preventDefault()
-})
-bufferSrc.addEventListener('submit', (e) => {
-  e.preventDefault()
-  // setBuffer(state.convolver, bufferInput.value)
-})
+  state.viewEls.clampToNote.addEventListener('click', (e) => {
+    state.clampToNote = !state.clampToNote
+  })
+  state.viewEls.bufferSrc.addEventListener('submit', (e) => {
+    e.preventDefault()
+    // setBuffer(state.convolver, bufferInput.value)
+  })
+  state.viewEls.toggleVibrato.addEventListener('click', () => {
+    setVibrato()
+  })
+
+  state.viewEls.vibratoRate.value = state.vibrato.rate
+  state.viewEls.vibratoAmplitube.value = state.vibrato.amplitude
+  state.viewEls.vibratoRate.addEventListener('change', () => {
+    setVibrato(setVibrato(state.viewEls.vibratoRate.value))
+  })
+  state.viewEls.vibratoAmplitube.addEventListener('change', () => {
+    setVibrato(state.vibrato.rate, state.viewEls.vibratoAmplitube.value)
+  })
+  document.body.appendChild(view)
+}
 
 function setVibrato (rate, ampl) {
   if (rate || ampl) {
@@ -172,25 +159,15 @@ function setVibrato (rate, ampl) {
     state.vibrato.rate = rate
     state.vibrato.amplitude = ampl
     state.vibrato.interval = setInterval(vibrato, state.vibrato.rate)
-  } else if (shouldUseVibrato.checked) {
+  } else if (state.viewEls.toggleVibrato.checked) {
     state.vibrato.interval = setInterval(vibrato, state.vibrato.rate)
   } else {
     clearInterval(state.vibrato.interval)
   }
 }
-shouldUseVibrato.addEventListener('click', () => {
-  setVibrato()
-})
-vibratoRateInput.addEventListener('change', () => {
-  setVibrato(setVibrato(vibratoRateInput.value))
-})
-
-vibratoAmplitubeInput.addEventListener('change', () => {
-  setVibrato(state.vibrato.rate, vibratoRateInput.value)
-})
 
 function setBackround (x, y) {
-  state.view.style.background = `hsla(${x}, ${y}%, 50%, 1)`
+  view.style.background = `hsla(${x}, ${y}%, 50%, 1)`
 }
 
 function step (e) {
@@ -214,7 +191,7 @@ function step (e) {
   }, [])
     : { frequency: freq, note: 'n/a' }
   state.oscillator.frequency.value = curNote.frequency
-  noteDisplay.innerHTML = `Current note: ${curNote.note}`
+  state.viewEls.noteDisplay.innerHTML = `Current note: ${curNote.note}`
   setBackround(240 + (e.clientX / window.innerWidth * 100), vol * 100)
   /**
    * rAF Makes Chrome sound terrible.
@@ -233,8 +210,7 @@ function vibrato () {
 
 (function theremin () {
   getNotes()
-  state.view.classList.add(styles.theremin)
-  document.body.appendChild(state.view)
+  initView()
   document.addEventListener('mousemove', step)
 })()
 
