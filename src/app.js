@@ -11,7 +11,20 @@ const audioCtx = new window.AudioContext()
  * App state.
  */
 const state = {
-  currentScale: [{name: 'c', disabled: false}, {name: 'c#', disabled: false}, {name: 'd', disabled: false}, { name: 'd#', disabled: false}, {name: 'e', disabled: false}, {name: 'f', disabled: false}, {name: 'f#', disabled: false}, {name: 'g', disabled: false}, {name: 'g#', disabled: false}, {name: 'a', disabled: false}, {name: 'a#', disabled: false}, {name: 'b', disabled: false}],
+  currentScale: [
+    {name: 'c', disabled: false},
+    {name: 'c#', disabled: false},
+    {name: 'd', disabled: false},
+    {name: 'd#', disabled: false},
+    {name: 'e', disabled: false},
+    {name: 'f', disabled: false},
+    {name: 'f#', disabled: false},
+    {name: 'g', disabled: false},
+    {name: 'g#', disabled: false},
+    {name: 'a', disabled: false},
+    {name: 'a#', disabled: false},
+    {name: 'b', disabled: false}
+  ],
   clampToNote: false,
   convolver: audioCtx.createConvolver(),
   curNotes: [],
@@ -25,32 +38,32 @@ const state = {
   ],
   overlayVisible: true,
   view: document.createElement('div'),
-  wobble: { dir: 1, val: 1 }
+  vibrato: { dir: 1, val: 1, rate: 10, amplitude: 5, interval: () => {} }
 }
 
 /**
  * Audio.
  */
-function initAudio () {
-	// const reverb = Reverb(audioCtx)
+function initAudio (shouldDisconnect) {
   audioCtx.decodeAudioData(reverb)
-		.then((data) => {
-  console.log(data)
-  state.convolver.buffer = data
-  state.convolver.connect(state.gain)
-  state.oscillator.connect(state.convolver)
-			// reverb.connect(state.gain)
-		  state.gain.connect(audioCtx.destination)
-		  state.oscillator.frequency.value = 0
-		  state.oscillator.start()
-})
+  .then((data) => {
+    if (shouldDisconnect) {
+      state.convolver.disconnect(state.gain)
+    }
+    state.convolver.buffer = data
+    state.convolver.connect(state.gain)
+    state.oscillator.connect(state.gain)
+    state.gain.connect(audioCtx.destination)
+    state.oscillator.frequency.value = 0
+    state.oscillator.start()
+  })
 }
 
 /**
  * Fetch frequency data.
  */
 function getNotes () {
-  fetch('https://s3-us-west-2.amazonaws.com/s.cdpn.io/4893/music-freqs-lower.json')
+  fetch('/src/music-freqs.json')
   .then((resp) => {
     return resp.json()
   })
@@ -64,10 +77,17 @@ function getNotes () {
  */
 const noteDisplay = document.createElement('p')
 const allowedNotes = document.createElement('form')
-const controls = document.createElement('form')
+const controls = document.createElement('div')
 const clampOption = document.createElement('div')
 const toggleSnapToNote = document.createElement('input')
 const waves = document.createElement('select')
+const bufferSrc = document.createElement('form')
+const bufferInput = document.createElement('input')
+const bufferSubmit = document.createElement('button')
+const vibratoSettings = document.createElement('form')
+const shouldUseVibrato = document.createElement('input')
+const vibratoRateInput = document.createElement('input')
+const vibratoAmplitubeInput = document.createElement('input')
 
 // Overlay
 const overlay = document.createElement('div')
@@ -95,9 +115,23 @@ state.currentScale.map((note, idx) => {
 })
 toggleSnapToNote.type = 'checkbox'
 clampOption.innerHTML = 'Clamp to note?'
+bufferInput.placeholder = 'Custom buffer source'
+bufferSubmit.innerHTML = 'Get'
+bufferSrc.appendChild(bufferInput)
+bufferSrc.appendChild(bufferSubmit)
+vibratoRateInput.type = 'number'
+vibratoRateInput.value = state.vibrato.rate
+vibratoAmplitubeInput.type = 'number'
+vibratoAmplitubeInput.value = state.vibrato.amplitude
+shouldUseVibrato.type = 'checkbox'
+vibratoSettings.appendChild(shouldUseVibrato)
+vibratoSettings.appendChild(vibratoRateInput)
+vibratoSettings.appendChild(vibratoAmplitubeInput)
 clampOption.appendChild(toggleSnapToNote)
 controls.appendChild(clampOption)
 controls.appendChild(waves)
+controls.appendChild(bufferSrc)
+controls.appendChild(vibratoSettings)
 noteDisplay.classList.add(styles.currentNote)
 controls.appendChild(noteDisplay)
 allowedNotes.classList.add(styles.notes)
@@ -127,6 +161,33 @@ toggleSnapToNote.addEventListener('click', (e) => {
 allowedNotes.addEventListener('submit', (e) => {
   e.preventDefault()
 })
+bufferSrc.addEventListener('submit', (e) => {
+  e.preventDefault()
+  // setBuffer(state.convolver, bufferInput.value)
+})
+
+function setVibrato (rate, ampl) {
+  if (rate || ampl) {
+    clearInterval(state.vibrato.interval)
+    state.vibrato.rate = rate
+    state.vibrato.amplitude = ampl
+    state.vibrato.interval = setInterval(vibrato, state.vibrato.rate)
+  } else if (shouldUseVibrato.checked) {
+    state.vibrato.interval = setInterval(vibrato, state.vibrato.rate)
+  } else {
+    clearInterval(state.vibrato.interval)
+  }
+}
+shouldUseVibrato.addEventListener('click', () => {
+  setVibrato()
+})
+vibratoRateInput.addEventListener('change', () => {
+  setVibrato(setVibrato(vibratoRateInput.value))
+})
+
+vibratoAmplitubeInput.addEventListener('change', () => {
+  setVibrato(state.vibrato.rate, vibratoRateInput.value)
+})
 
 function setBackround (x, y) {
   state.view.style.background = `hsla(${x}, ${y}%, 50%, 1)`
@@ -135,9 +196,9 @@ function setBackround (x, y) {
 function step (e) {
   const activeScale = state.currentScale.filter(note => !note.disabled).map(note => note.name)
   const vol = (-1 * e.clientY / window.innerHeight) + 1
-  state.gain.gain.value = state.oscillator.type === 'sine' || state.oscillator.type === 'triangle' ?
-     vol :
-    vol / 10
+  state.gain.gain.value = state.oscillator.type === 'sine' || state.oscillator.type === 'triangle'
+    ? vol
+    : vol / 10
   const freq = (e.clientX / window.innerWidth * 440) + 100
   const curNote = state.clampToNote ? state.curNotes.reduce((acc, cur) => {
     const isNatural = cur.note.length === 2
@@ -150,8 +211,8 @@ function step (e) {
       }
     }
     return acc
-  }, []) :
-    { frequency: freq, note: 'n/a' }
+  }, [])
+    : { frequency: freq, note: 'n/a' }
   state.oscillator.frequency.value = curNote.frequency
   noteDisplay.innerHTML = `Current note: ${curNote.note}`
   setBackround(240 + (e.clientX / window.innerWidth * 100), vol * 100)
@@ -161,14 +222,12 @@ function step (e) {
   // window.requestAnimationFrame(step.bind(null, e))
 }
 
-function wobble () {
-  state.oscillator.detune.value = state.wobble.dir === -1 ?
-    state.oscillator.detune.value - state.wobble.val :
-    state.oscillator.detune.value + state.wobble.val
-  if (Math.abs(state.wobble.val) > 5) {
-    state.wobble = { dir: state.wobble.dir * -1, val: state.wobble.val - (state.wobble.dir * 1) }
+function vibrato () {
+  state.oscillator.detune.value = state.oscillator.detune.value + state.vibrato.val
+  if (Math.abs(state.vibrato.val) > state.vibrato.amplitude) {
+    state.vibrato = { ...state.vibrato, dir: state.vibrato.dir * -1, val: state.vibrato.val - (state.vibrato.dir * 1) }
   } else {
-    state.wobble.val = state.wobble.val + (state.wobble.dir * 1)
+    state.vibrato.val = state.vibrato.val + (state.vibrato.dir * 1)
   }
 }
 
@@ -176,7 +235,6 @@ function wobble () {
   getNotes()
   state.view.classList.add(styles.theremin)
   document.body.appendChild(state.view)
-  // setInterval(wobble, 10)
   document.addEventListener('mousemove', step)
 })()
 

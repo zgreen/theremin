@@ -37,12 +37,17 @@ module.exports = {
         exclude: /node_modules/,
         loader: 'babel',
         query: {
-          presets: ['es2015']
+          presets: ['es2015'],
+					plugins: ['transform-object-rest-spread']
         }
       },
-      {
+			{
         test: /\.css$/,
         loader: 'style!css?modules&localIdentName=[name]__[local]__[hash:base64:5]!postcss'
+      },
+			{
+        test: /\.json$/,
+        loader: 'json'
       },
       {
         test: /\.html$/,
