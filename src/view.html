@@ -1,0 +1,24 @@
+<div id="overlay">Heads up! This thing makes noise. It shouldn't be too loud, but consider turning down your speakers or headphones just in case. Click anywhere to begin.</div>
+<div id="theremin"></div>
+<div id="controls">
+	<label for="clamp-to-note">Clamp to note?</label>
+	<input id="clamp-to-note" type="checkbox">
+	<form action="">
+		<label for="toggle-reverb"></label>
+		<input type="checkbox" id="toggle-reverb">
+		<label for="custom-buffer-source">Set a custom buffer source</label>
+		<input id="custom-buffer-source" type="text" placeholder="Paste a URL to an audio file to use a the buffer">
+		<button type="submit">Get</button>
+	</form>
+	<form id="vibrato-settings" action="">
+		<label for="enable-vibrato">Enable vibrato?</label>
+		<input id="enable-vibrato" type="checkbox">
+		<label for="vibrato-rate">Vibrato rate</label>
+		<input id="vibrato-rate" type="number">
+		<label for="vibrato-amplitude">Vibrato amplitude</label>
+		<input id="vibrato-amplitude" type="number">
+	</form>
+	<select name="" id="waves"></select>
+	<p id="note-display"></p>
+	<div id="allowed-notes"></div>
+</div>

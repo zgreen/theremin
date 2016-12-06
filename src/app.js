@@ -6,12 +6,14 @@ import view from './view.html'
 /**
  * Audio.
  */
-const audioCtx = new window.AudioContext()
+const audioCtx = new window.AudioContext() || new window.webkitAudioContext() // eslint-disable-line new-cap
 
 /**
  * App state.
  */
 const state = {
+  audioActive: false,
+  audioData: {},
   currentScale: [
     {name: 'c', disabled: false},
     {name: 'c#', disabled: false},
@@ -31,6 +33,7 @@ const state = {
   curNotes: [],
   gain: audioCtx.createGain(),
   oscillator: audioCtx.createOscillator(),
+  reverb: { enabled: false },
   waves: [
     'sine',
     'square',
@@ -48,6 +51,7 @@ const state = {
     vibratoRate: view.querySelector('#vibrato-rate'),
     noteDisplay: view.querySelector('#note-display'),
     overlay: view.querySelector('#overlay'),
+    toggleReverb: view.querySelector('#toggle-reverb'),
     toggleVibrato: view.querySelector('#enable-vibrato'),
     waves: view.querySelector('#waves')
   },
@@ -57,19 +61,48 @@ const state = {
 /**
  * Audio.
  */
-function initAudio (shouldDisconnect) {
-  audioCtx.decodeAudioData(reverb)
-  .then((data) => {
-    if (shouldDisconnect) {
-      state.convolver.disconnect(state.gain)
-    }
-    state.convolver.buffer = data
-    state.convolver.connect(state.gain)
+function playAudio () {
+  if (!state.reverb.enabled) {
     state.oscillator.connect(state.gain)
+  } else {
+    state.convolver.buffer = state.audioData
+    state.convolver.connect(state.gain)
+    state.oscillator.connect(state.convolver)
+  }
+  if (!state.audioActive) {
     state.gain.connect(audioCtx.destination)
     state.oscillator.frequency.value = 0
     state.oscillator.start()
-  })
+  }
+}
+
+function initAudio () {
+  if (state.audioActive) {
+    state.convolver.disconnect(state.gain)
+  }
+  if (!state.audioData.length) {
+    audioCtx.decodeAudioData(reverb)
+      .then((data) => {
+        state.audioData = data
+        playAudio()
+      })
+  } else {
+    playAudio()
+  }
+  // audioCtx.decodeAudioData(reverb)
+  //   .then((data) => {
+  //     state.audioData = data
+  //     if (!state.reverb.enabled) {
+  //       state.oscillator.connect(state.gain)
+  //     } else {
+  //       state.convolver.buffer = data
+  //       state.convolver.connect(state.gain)
+  //       state.oscillator.connect(state.convolver)
+  //     }
+  //     state.gain.connect(audioCtx.destination)
+  //     state.oscillator.frequency.value = 0
+  //     state.oscillator.start()
+  //   })
 }
 
 /**
@@ -150,6 +183,11 @@ function initView () {
   state.viewEls.vibratoAmplitube.addEventListener('change', () => {
     setVibrato(state.vibrato.rate, state.viewEls.vibratoAmplitube.value)
   })
+  // Reverb
+  state.viewEls.toggleReverb.addEventListener('click', () => {
+    state.reverb.enabled = state.viewEls.toggleReverb.checked
+    initAudio()
+  })
   document.body.appendChild(view)
 }
 
@@ -173,22 +211,26 @@ function setBackround (x, y) {
 function step (e) {
   const activeScale = state.currentScale.filter(note => !note.disabled).map(note => note.name)
   const vol = (-1 * e.clientY / window.innerHeight) + 1
-  state.gain.gain.value = state.oscillator.type === 'sine' || state.oscillator.type === 'triangle'
+  state.gain.gain.value = state.oscillator.type === 'sine' ||
+  state.oscillator.type === 'triangle'
     ? vol
     : vol / 10
   const freq = (e.clientX / window.innerWidth * 440) + 100
-  const curNote = state.clampToNote ? state.curNotes.reduce((acc, cur) => {
-    const isNatural = cur.note.length === 2
-    if (Array.isArray(acc)) {
-      if (activeScale.indexOf(cur.note.substr(0, (isNatural ? 1 : 2))) !== -1 && cur.frequency < freq) {
-        acc.push(cur)
+  const curNote = state.clampToNote
+    ? state.curNotes.reduce((acc, cur) => {
+      const isNatural = cur.note.length === 2
+      if (Array.isArray(acc)) {
+        if (activeScale.indexOf(cur.note.substr(0, (isNatural ? 1 : 2))) !==
+          -1 && cur.frequency < freq) {
+          acc.push(cur)
+        }
+        if (activeScale.indexOf(cur.note.substr(0, (isNatural ? 1 : 2))) !==
+          -1 && cur.frequency > freq) {
+          acc = acc[acc.length - 1]
+        }
       }
-      if (activeScale.indexOf(cur.note.substr(0, (isNatural ? 1 : 2))) !== -1 && cur.frequency > freq) {
-        acc = acc[acc.length - 1]
-      }
-    }
-    return acc
-  }, [])
+      return acc
+    }, [])
     : { frequency: freq, note: 'n/a' }
   state.oscillator.frequency.value = curNote.frequency
   state.viewEls.noteDisplay.innerHTML = `Current note: ${curNote.note}`
@@ -202,7 +244,11 @@ function step (e) {
 function vibrato () {
   state.oscillator.detune.value = state.oscillator.detune.value + state.vibrato.val
   if (Math.abs(state.vibrato.val) > state.vibrato.amplitude) {
-    state.vibrato = { ...state.vibrato, dir: state.vibrato.dir * -1, val: state.vibrato.val - (state.vibrato.dir * 1) }
+    state.vibrato = {
+      ...state.vibrato,
+      dir: state.vibrato.dir * -1,
+      val: state.vibrato.val - (state.vibrato.dir * 1)
+    }
   } else {
     state.vibrato.val = state.vibrato.val + (state.vibrato.dir * 1)
   }
