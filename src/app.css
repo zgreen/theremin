@@ -64,6 +64,11 @@ h1 {
   }
 }
 
+.noteDisplay {
+  flex-shrink: 0;
+  width: 100%;
+}
+
 .overlay {
   align-items: center;
   background: #111;

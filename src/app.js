@@ -41,7 +41,6 @@ const state = {
     'triangle'
   ],
   overlayVisible: true,
-  // view: document.createElement('div'),
   viewEls: {
     allowedNotes: view.querySelector('#allowed-notes'),
     bufferSrc: view.querySelector('#custom-buffer-source'),
@@ -61,48 +60,44 @@ const state = {
 /**
  * Audio.
  */
-function playAudio () {
-  if (!state.reverb.enabled) {
-    state.oscillator.connect(state.gain)
-  } else {
-    state.convolver.buffer = state.audioData
-    state.convolver.connect(state.gain)
-    state.oscillator.connect(state.convolver)
-  }
-  if (!state.audioActive) {
-    state.gain.connect(audioCtx.destination)
-    state.oscillator.frequency.value = 0
-    state.oscillator.start()
-  }
-}
-
 function initAudio () {
   if (state.audioActive) {
-    state.convolver.disconnect(state.gain)
+    state.oscillator.stop()
+    if (!state.reverb.enabled) {
+      state.convolver.disconnect(state.gain)
+      state.oscillator.disconnect(state.convolver)
+      state.gain.disconnect(audioCtx.destination)
+    }
   }
-  if (!state.audioData.length) {
-    audioCtx.decodeAudioData(reverb)
-      .then((data) => {
-        state.audioData = data
-        playAudio()
-      })
-  } else {
-    playAudio()
-  }
-  // audioCtx.decodeAudioData(reverb)
-  //   .then((data) => {
-  //     state.audioData = data
-  //     if (!state.reverb.enabled) {
-  //       state.oscillator.connect(state.gain)
-  //     } else {
-  //       state.convolver.buffer = data
-  //       state.convolver.connect(state.gain)
-  //       state.oscillator.connect(state.convolver)
-  //     }
-  //     state.gain.connect(audioCtx.destination)
-  //     state.oscillator.frequency.value = 0
-  //     state.oscillator.start()
-  //   })
+  getReverb()
+    .then((data) => {
+      state.convolver.buffer = data
+      // Convolver connects to gain
+      if (state.reverb.enabled) {
+        state.convolver.connect(state.gain)
+      }
+      // Oscillator connects to convolver
+      state.oscillator.connect(state.reverb.enabled ? state.convolver : state.gain)
+      // Gain connects to dest
+      state.gain.connect(audioCtx.destination)
+      state.oscillator.frequency.value = 0
+      // Oscillator starts
+      state.oscillator.start()
+    })
+}
+
+function getReverb () {
+  return new Promise((resolve, reject) => {
+    if (!state.audioData.length) {
+      audioCtx.decodeAudioData(reverb)
+        .then((data) => {
+          state.audioData = data
+          resolve(state.audioData)
+        })
+    } else {
+      resolve(state.audioData)
+    }
+  })
 }
 
 /**
@@ -157,6 +152,7 @@ function initView () {
   state.viewEls.waves.innerHTML = state.waves.map((wave) => {
     return `<option value="${wave}">${wave}</option>`
   }).join('')
+  state.viewEls.noteDisplay.classList.add(styles.noteDisplay)
   state.viewEls.waves.addEventListener('click', (e) => {
     state.gain.gain.value = 0
   })
@@ -183,9 +179,9 @@ function initView () {
   state.viewEls.vibratoAmplitube.addEventListener('change', () => {
     setVibrato(state.vibrato.rate, state.viewEls.vibratoAmplitube.value)
   })
-  // Reverb
+  // Toggle Reverb
   state.viewEls.toggleReverb.addEventListener('click', () => {
-    state.reverb.enabled = state.viewEls.toggleReverb.checked
+    state.reverb.enabled = !state.reverb.enabled
     initAudio()
   })
   document.body.appendChild(view)
