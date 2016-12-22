@@ -1,7 +1,8 @@
-import fetch from 'isomorphic-fetch'
 import * as styles from './app.css'
-import reverb from 'arraybuffer!./AbernyteGrainSilo.m4a'
+// import reverb from 'arraybuffer!./AbernyteGrainSilo.m4a'
 import view from './view.html'
+const notes = require('promise?global!./music-freqs.json')
+const reverb = require('promise?global!arraybuffer!./AbernyteGrainSilo.m4a')
 
 /**
  * Audio.
@@ -89,11 +90,13 @@ function initAudio () {
 function getReverb () {
   return new Promise((resolve, reject) => {
     if (!state.audioData.length) {
-      audioCtx.decodeAudioData(reverb)
-        .then((data) => {
-          state.audioData = data
-          resolve(state.audioData)
-        })
+      reverb().then((file) => {
+        audioCtx.decodeAudioData(file)
+          .then((data) => {
+            state.audioData = data
+            resolve(state.audioData)
+          })
+      })
     } else {
       resolve(state.audioData)
     }
@@ -104,13 +107,16 @@ function getReverb () {
  * Fetch frequency data.
  */
 function getNotes () {
-  fetch('/src/music-freqs.json')
-  .then((resp) => {
-    return resp.json()
+  notes().then((json) => {
+    state.curNotes = json
   })
-  .then((resp) => {
-    state.curNotes = resp
-  })
+  // fetch('/src/music-freqs.json')
+  // .then((resp) => {
+  //   return resp.json()
+  // })
+  // .then((resp) => {
+  //   state.curNotes = resp
+  // })
 }
 
 /**
