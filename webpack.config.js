@@ -51,7 +51,7 @@ module.exports = {
       },
       {
         test: /\.html$/,
-        loader: 'dom!html'
+        loader: 'dom!html?interpolate'
       }
     ]
   },

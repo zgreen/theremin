@@ -1,5 +1,11 @@
 import * as styles from './app.css'
+// const styles = require('./styles')
 // import reverb from 'arraybuffer!./AbernyteGrainSilo.m4a'
+// let view = {}
+// const styles = require('promise?global!./app.css')
+// styles().then((stylesObj) => {
+//   view = require(`imports?styles=${stylesObj}!./view.html`)
+// })
 import view from './view.html'
 const notes = require('promise?global!./music-freqs.json')
 const reverb = require('promise?global!arraybuffer!./AbernyteGrainSilo.m4a')
@@ -57,7 +63,8 @@ const state = {
     toggleVibrato: view.querySelector('#enable-vibrato'),
     waves: view.querySelector('#waves')
   },
-  vibrato: { dir: 1, val: 1, rate: 10, amplitude: 5, interval: () => {} }
+  vibrato: { dir: 1, val: 1, rate: 10, amplitude: 5, interval: () => {} },
+  tremolo: { rate: 10, amplitude: 5 }
 }
 
 /**
@@ -114,13 +121,6 @@ function getNotes () {
   notes().then((json) => {
     state.curNotes = json
   })
-  // fetch('/src/music-freqs.json')
-  // .then((resp) => {
-  //   return resp.json()
-  // })
-  // .then((resp) => {
-  //   state.curNotes = resp
-  // })
 }
 
 /**
@@ -261,6 +261,10 @@ function vibrato () {
     state.vibrato.val = state.vibrato.val + (state.vibrato.dir * 1)
   }
 }
+
+// function tremolo () {
+//   state.gain.value = state.tremolo.val
+// }
 
 (function theremin () {
   getNotes()
