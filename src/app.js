@@ -7,7 +7,9 @@ const reverb = require('promise?global!arraybuffer!./AbernyteGrainSilo.m4a')
 /**
  * Audio.
  */
-const audioCtx = new window.AudioContext() || new window.webkitAudioContext() // eslint-disable-line new-cap
+const audioCtx = window.AudioContext
+  ? new window.AudioContext()
+  : new window.webkitAudioContext() // eslint-disable-line new-cap
 
 /**
  * App state.
@@ -63,11 +65,10 @@ const state = {
  */
 function initAudio () {
   if (state.audioActive) {
-    state.oscillator.stop()
+    state.gain.disconnect(audioCtx.destination)
     if (!state.reverb.enabled) {
       state.convolver.disconnect(state.gain)
       state.oscillator.disconnect(state.convolver)
-      state.gain.disconnect(audioCtx.destination)
     }
   }
   getReverb()
@@ -83,7 +84,10 @@ function initAudio () {
       state.gain.connect(audioCtx.destination)
       state.oscillator.frequency.value = 0
       // Oscillator starts
-      state.oscillator.start()
+      if (!state.audioActive) {
+        state.oscillator.start()
+        state.audioActive = true
+      }
     })
 }
 
@@ -211,7 +215,9 @@ function setBackround (x, y) {
 }
 
 function step (e) {
-  const activeScale = state.currentScale.filter(note => !note.disabled).map(note => note.name)
+  const activeScale = state.currentScale
+    .filter(note => !note.disabled)
+    .map(note => note.name)
   const vol = (-1 * e.clientY / window.innerHeight) + 1
   state.gain.gain.value = state.oscillator.type === 'sine' ||
   state.oscillator.type === 'triangle'
@@ -260,6 +266,7 @@ function vibrato () {
   getNotes()
   initView()
   document.addEventListener('mousemove', step)
+  document.addEventListener('touchmove', step)
 })()
 
 if (module.hot) {
