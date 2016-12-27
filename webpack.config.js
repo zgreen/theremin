@@ -29,17 +29,18 @@ module.exports = {
         test: /\.js$/,
         exclude: /node_modules/,
         loader: 'eslint'
+      },
+      {
+        test: /\.jsx$/,
+        loader: 'nativejsx',
+        excludes: /node_modules/,
       }
     ],
     loaders: [
       {
         test: /\.js$/,
         exclude: /node_modules/,
-        loader: 'babel',
-        query: {
-          presets: ['es2015'],
-					plugins: ['transform-object-rest-spread']
-        }
+        loader: 'babel'
       },
 			{
         test: /\.css$/,
@@ -52,6 +53,14 @@ module.exports = {
       {
         test: /\.html$/,
         loader: 'dom!html?interpolate'
+      },
+      {
+        test: /\.pug$/,
+        loader: 'pug'
+      },
+      {
+        test: /\.vue$/,
+        loader: 'vue'
       }
     ]
   },

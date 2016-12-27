@@ -1,71 +1,8 @@
+import { audioCtx, state } from './state'
 import * as styles from './app.css'
-// const styles = require('./styles')
-// import reverb from 'arraybuffer!./AbernyteGrainSilo.m4a'
-// let view = {}
-// const styles = require('promise?global!./app.css')
-// styles().then((stylesObj) => {
-//   view = require(`imports?styles=${stylesObj}!./view.html`)
-// })
 import view from './view.html'
 const notes = require('promise?global!./music-freqs.json')
 const reverb = require('promise?global!arraybuffer!./AbernyteGrainSilo.m4a')
-
-/**
- * Audio.
- */
-const audioCtx = window.AudioContext
-  ? new window.AudioContext()
-  : new window.webkitAudioContext() // eslint-disable-line new-cap
-
-/**
- * App state.
- */
-const state = {
-  audioActive: false,
-  audioData: {},
-  currentScale: [
-    {name: 'c', disabled: false},
-    {name: 'c#', disabled: false},
-    {name: 'd', disabled: false},
-    {name: 'd#', disabled: false},
-    {name: 'e', disabled: false},
-    {name: 'f', disabled: false},
-    {name: 'f#', disabled: false},
-    {name: 'g', disabled: false},
-    {name: 'g#', disabled: false},
-    {name: 'a', disabled: false},
-    {name: 'a#', disabled: false},
-    {name: 'b', disabled: false}
-  ],
-  clampToNote: false,
-  convolver: audioCtx.createConvolver(),
-  curNotes: [],
-  gain: audioCtx.createGain(),
-  oscillator: audioCtx.createOscillator(),
-  reverb: { enabled: false },
-  waves: [
-    'sine',
-    'square',
-    'sawtooth',
-    'triangle'
-  ],
-  overlayVisible: true,
-  viewEls: {
-    allowedNotes: view.querySelector('#allowed-notes'),
-    bufferSrc: view.querySelector('#custom-buffer-source'),
-    clampToNote: view.querySelector('#clamp-to-note'),
-    controls: view.querySelector('#controls'),
-    vibratoAmplitube: view.querySelector('#vibrato-amplitude'),
-    vibratoRate: view.querySelector('#vibrato-rate'),
-    noteDisplay: view.querySelector('#note-display'),
-    overlay: view.querySelector('#overlay'),
-    toggleReverb: view.querySelector('#toggle-reverb'),
-    toggleVibrato: view.querySelector('#enable-vibrato'),
-    waves: view.querySelector('#waves')
-  },
-  vibrato: { dir: 1, val: 1, rate: 10, amplitude: 5, interval: () => {} },
-  tremolo: { rate: 10, amplitude: 5 }
-}
 
 /**
  * Audio.
@@ -194,6 +131,7 @@ function initView () {
     state.reverb.enabled = !state.reverb.enabled
     initAudio()
   })
+  // state.viewEls.controls.appendChild()
   document.body.appendChild(view)
 }
 
@@ -261,10 +199,6 @@ function vibrato () {
     state.vibrato.val = state.vibrato.val + (state.vibrato.dir * 1)
   }
 }
-
-// function tremolo () {
-//   state.gain.value = state.tremolo.val
-// }
 
 (function theremin () {
   getNotes()
