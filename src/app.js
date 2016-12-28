@@ -1,6 +1,7 @@
 import { audioCtx, state } from './state'
 import * as styles from './app.css'
 import view from './view.html'
+import Elm from './Main.elm'
 const notes = require('promise?global!./music-freqs.json')
 const reverb = require('promise?global!arraybuffer!./AbernyteGrainSilo.m4a')
 
@@ -132,6 +133,8 @@ function initView () {
     initAudio()
   })
   // state.viewEls.controls.appendChild()
+  console.log(Elm)
+  Elm.Main.embed(view)
   document.body.appendChild(view)
 }
 

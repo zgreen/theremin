@@ -55,12 +55,9 @@ module.exports = {
         loader: 'dom!html?interpolate'
       },
       {
-        test: /\.pug$/,
-        loader: 'pug'
-      },
-      {
-        test: /\.vue$/,
-        loader: 'vue'
+        test: /\.elm$/,
+        exclude: [/elm-stuff/, /node_modules/],
+        loader: 'elm-webpack'
       }
     ]
   },
