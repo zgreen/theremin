@@ -42,4 +42,4 @@ function(t,r){t.exports=function(){throw new Error("define cannot be used indire
   !*** (webpack)/buildin/module.js ***!
   \***********************************/
 function(t,r){t.exports=function(t){return t.webpackPolyfill||(t.deprecate=function(){},t.paths=[],t.children=[],t.webpackPolyfill=1),t}}]);
-//# sourceMappingURL=app.bundle.js.map
+//# sourceMappingURL=main.bundle.js.map

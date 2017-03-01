@@ -10,7 +10,7 @@ var isHot = process.argv.indexOf('--hot') !== -1
 
 module.exports = {
   entry: {
-    app: 'src/app.js'
+    app: 'src/app.js',
   },
   output: {
     path: 'build',
@@ -54,15 +54,21 @@ module.exports = {
         test: /\.html$/,
         loader: 'dom!html?interpolate'
       },
+      // {
+      //   test: /\.pug$/,
+      //   loader: 'pug'
+      // },
+      // {
+      //   test: /\.vue$/,
+      //   loader: 'vue'
+      // },
       {
-        test: /\.pug$/,
-        loader: 'pug'
-      },
-      {
-        test: /\.vue$/,
-        loader: 'vue'
+        test: /\.elm$/,
+        exclude: [/elm-stuff/, /node_modules/],
+        loader: 'elm-webpack?verbose=true&warn=true&debug=true'
       }
-    ]
+    ],
+    // noParse: /\.elm$/
   },
   postcss: function (webpack) {
     return [
