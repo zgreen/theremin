@@ -14,7 +14,7 @@ module.exports = {
   },
   output: {
     path: 'build',
-    publicPath: !isHot ? '/build/' : 'http://localhost:8080/build/',
+    publicPath: !isHot ? '/theremin/build/' : 'http://localhost:8080/build/',
     filename: '[name].bundle.js'
   },
   resolve: {
